@@ -14,13 +14,15 @@ def scrape_all():
     news_title, news_paragraph = mars_news(browser)
     img_url = featured_image(browser)
     facts = mars_facts()
+    hemisphere_image_urls = hemisphere_images(browser)
 
     data = {
         "news_title": news_title,
         "news_paragraph": news_paragraph,
         "featured_image": img_url,
         "facts": facts,
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "hemispheres": hemisphere_image_urls,
     }
 
     # Stop webdriver
@@ -98,14 +100,51 @@ def mars_facts():
         return None
 
     # Rename columns and set the index to the table headings
-    df.columns=['description', 'Mars', 'Earth']
-    df.set_index('description', inplace=True)
+    df.columns=['Description', 'Mars', 'Earth']
+    df.drop([0], inplace=True)
+    df.set_index('Description', inplace=True)
 
     # Turn the DataFrame back into html
-    return df.to_html()
+    return df.to_html(justify='left', border=0, classes=['table',
+                                                         'table-dark',
+                                                         'table-striped',
+                                                         'table-sm'])
+
+#---- Hemisphere Images -------------------------------------------------------
+def hemisphere_images(browser):
+    url = 'https://marshemispheres.com/'
+    browser.visit(url)
+
+    # Variable to store dictionaries of the image urls and their titles
+    hemisphere_image_urls = []
+
+    html = browser.html
+    hemisphere_soup = soup(html, 'html.parser')
+    # Retrieve all the containers that have the anchor tags for the hemisphere
+    # images.
+    containers = hemisphere_soup.find_all('div', class_='item')
+
+    for container in containers:
+        # Find the title in the only h3 tag.
+        title = container.find('h3').get_text()
+        # Find the href in the first anchor tag, this is a relative url.
+        next_rel_url = container.find('a').get('href')
+        # Build the next url to visit.
+        next_url = f'{url}{next_rel_url}'
+
+        browser.visit(next_url)
+        html = browser.html
+        next_hemisphere_soup = soup(html, 'html.parser')
+        # Find the container that has the full resolution image relative url.
+        next_container = next_hemisphere_soup.find('div', class_="wide-image-wrapper")
+        # Find the href for the full resolution image, this is a relative url.
+        hemi_img_rel_url = next_container.find('a').get('href')
+        # Build the full url and append the dictionary containing the image url
+        # and corresponding title.
+        hemisphere_image_urls.append({'img_url': f'{url}{hemi_img_rel_url}',
+                                    'title': title})
+    return hemisphere_image_urls
 
 if __name__ == "__main__":
     # If running as script, print scraped data
     data = scrape_all()
-    print('-----------------------\n-----------------------')
-    print(data)
