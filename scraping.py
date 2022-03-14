@@ -7,11 +7,13 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 def scrape_all():
-    # Initiate headless driver for deployment
-    # Set up Splinter (prepping our automated browser)
+    """Scrape data from four Mars websites and return dictionary of results."""
+    # Initiate headless webdriver for deployment
+    # Set up Splinter (prepping the automated browser)
     executable_path = {"executable_path": ChromeDriverManager().install()}
     browser = Browser("chrome", **executable_path, headless=True)
 
+    # Retrieve the data for each of the four sections of the webpage
     news_title, news_paragraph = mars_news(browser)
     img_url = featured_image(browser)
     facts = mars_facts()
@@ -34,11 +36,12 @@ def scrape_all():
 
 # ---- Mars Article Title and Paragraph ----------------------------------------
 def mars_news(browser):
+    """Scrape article title and summary data and return tuple of results."""
     # Visit the mars nasa news site
     url = "https://redplanetscience.com"
     browser.visit(url)
 
-    # Optional delay for loading the page
+    # Delay for loading the page
     browser.is_element_present_by_css("div.list_text", wait_time=1)
 
     # Parse the HTML and return an object containing all of the html
@@ -50,8 +53,7 @@ def mars_news(browser):
         # Select the first div that holds the news article data
         slide_elem = news_soup.select_one("div.list_text")
 
-        # Use the parent element to find the first `a` tag and save it as
-        # `news_title`
+        # Use the parent element to find the first `a` tag
         news_title = slide_elem.find("div", class_="content_title").get_text()
 
         # Use the parent element to find the paragraph text
@@ -65,13 +67,15 @@ def mars_news(browser):
 
 # ---- JPL Space Images: Featured Image ----------------------------------------
 def featured_image(browser):
+    """Scrape featured Mars image url and return as a string."""
     # Visit URL
     url = "https://spaceimages-mars.com"
     browser.visit(url)
 
-    # Find and click the full image button. Since a ctrl+F search in the devtools
-    # reveals there are only 3 button elements, we will select off the index 1
-    # button since the full image button is the second button element on the page
+    # Find and click the full image button. Since a ctrl+F search in the
+    # devtools reveals there are only 3 button elements, we will select off the
+    # index 1 button since the full image button is the second button element
+    # on the page.
     full_image_elem = browser.find_by_tag("button")[1]
     full_image_elem.click()
 
@@ -88,13 +92,14 @@ def featured_image(browser):
         return None
 
     # Use the base URL to create an absolute URL
-    img_url = f"https://spaceimages-mars.com/{img_url_rel}"
+    img_url = f"{url}/{img_url_rel}"
 
     return img_url
 
 
 # ---- Facts About Mars --------------------------------------------------------
 def mars_facts():
+    """Scrape Mars-Earth comparison table and return as string of html."""
     try:
         # Use pandas pd.read_html() to capture all of the tables on the
         # webpage. We're only interested in the first table (index 0)
@@ -103,12 +108,12 @@ def mars_facts():
     except BaseException:
         return None
 
-    # Rename columns and set the index to the table headings
+    # Restructure and reorganize the DataFrame
     df.columns = ["Description", "Mars", "Earth"]
     df.drop([0], inplace=True)
     df.set_index("Description", inplace=True)
 
-    # Turn the DataFrame back into html
+    # Convert the DataFrame back into an html table
     return df.to_html(
         justify="left",
         border=0,
@@ -118,10 +123,11 @@ def mars_facts():
 
 # ---- Hemisphere Images -------------------------------------------------------
 def hemisphere_images(browser):
+    """Scrape Mars hemisphere image urls/titles, return as list of dicts."""
     url = "https://marshemispheres.com/"
     browser.visit(url)
 
-    # Variable to store dictionaries of the image urls and their titles
+    # Store dictionaries of the image urls and their titles
     hemisphere_image_urls = []
 
     html = browser.html
