@@ -1,0 +1,17 @@
+` ` - indicates command
+Terminal 1 (database server)
+1. Activate python environment (PythonData)
+2. use `mongod` to start MongoDB server
+
+Terminal 2 (optional view/delete database records)
+1. Activate python environment (PythonData)
+2. use `mongosh`
+	- `use mars_app` - change to `mars_app` database
+	- `show collections` - show collections
+	- `db.mars.find()` - see what is in the collection `mars`
+	- `db.mars.deleteOne({})` - delete the record
+	- `exit` - exit mongosh
+
+Terminal 3 (run the app)
+1. Activate python environment (PythonData)
+2. `python app.py`
